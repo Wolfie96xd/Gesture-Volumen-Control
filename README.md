@@ -7,3 +7,15 @@ Firstly, based on the first hand that is detected, the structure or "**virtual s
 We will focus on the tips of the index, middle and thumb fingers. 
 - When the index finger and thumb are joined together, the volume meter starts to increase (when it reaches 100, it starts again from 0).
 - Pressing the index and middle finger together for approximately 3 seconds pauses the video or music.
+
+### Requirements
+
+
+### Dependencies/Packages
+- Mediapipe
+- CV2
+- Math
+- Numpy
+- Time
+- Pynput
+- Pycaw
