@@ -6,7 +6,7 @@ Firstly, based on the first hand that is detected, the structure or "**virtual s
 
 We will focus on the tips of your fingers following the next instructions: 
 
-- **Stop/Play**: INDEX + MIDDLE 
+- **Stop/Play**: INDEX + MIDDLE ```diff - text in red```
 - **Volume UP**: INDEX + THUMB
 - **Volume Down**: PINKY + THUMB
 - **Next**: MIDDLE + THUMB
