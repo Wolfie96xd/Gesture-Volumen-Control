@@ -15,7 +15,5 @@ We will focus on the tips of the index, middle and thumb fingers.
 - Mediapipe
 - CV2
 - Math
-- Numpy
 - Time
 - Pynput
-- Pycaw
