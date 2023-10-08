@@ -1,38 +1,42 @@
 import cv2
 import mediapipe as mp
 from math import hypot
-from ctypes import cast, POINTER
-from comtypes import CLSCTX_ALL
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-import numpy as np
 from pynput.keyboard import Key, Controller
 import time
 
+# Initialize the camera and hand detection
 cap = cv2.VideoCapture(0)
 mpHands = mp.solutions.hands
 hands = mpHands.Hands()
 mpDraw = mp.solutions.drawing_utils
-devices = AudioUtilities.GetSpeakers()
-interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-volume = cast(interface, POINTER(IAudioEndpointVolume))
-volbar = 400
-volper = 0
-volMin, volMax = volume.GetVolumeRange()[:2]
-keyboard = Controller()
 detect_hands = True
+keyboard = Controller()
+
+# Initialize detection and gesture variables
 pause_start_time = None
 pausing = False
 
-click_start_time = None
-clicking = False
+next_start_time = None
+v_next = False
+
+previous_start_time = None
+v_previous = False
+
+volUP_start_time = None
+v_volUP = False
+
+volDO_start_time = None
+v_VolDO = False
+
+mute_star_time = None
+v_mute = False
 
 while True:
+    # Capture a frame from the camera and process hand detection
     if detect_hands:
         success, img = cap.read()
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
         results = hands.process(imgRGB)
-
         lmList = []
         if results.multi_hand_landmarks:
             for handlandmark in results.multi_hand_landmarks:
@@ -42,38 +46,58 @@ while True:
                     lmList.append([id, cx, cy])
                 mpDraw.draw_landmarks(img, handlandmark, mpHands.HAND_CONNECTIONS)
 
+    # Process gestures if hand landmarks are detected
     if lmList != []:
-        x1, y1 = lmList[4][1], lmList[4][2]
-        x2, y2 = lmList[8][1], lmList[8][2]
-        x3, y3 = lmList[12][1], lmList[12][2]
+        x1, y1 = lmList[4][1], lmList[4][2] #Thumb
+        x2, y2 = lmList[8][1], lmList[8][2] #Index
+        x3, y3 = lmList[12][1], lmList[12][2] #Middle
+        x4, y4 = lmList[16][1],lmList[16][2] #Ring
+        x5, y5 = lmList[20][1],lmList[20][2] #Pinky
 
         cv2.circle(img, (x1, y1), 13, (255, 0, 0), cv2.FILLED)
         cv2.circle(img, (x2, y2), 13, (255, 0, 0), cv2.FILLED)
         cv2.circle(img, (x3, y3), 13, (255, 0, 0), cv2.FILLED)
-        cv2.line(img, (x1, y1), (x2, y2), (255, 0, 0), 3)
+        cv2.circle(img, (x4, y4), 13, (255, 0, 0), cv2.FILLED)
+        cv2.circle(img, (x5, y5), 13, (255, 0, 0), cv2.FILLED)
+        cv2.line(img, (x1, y1), (x2, y2), (0, 255, 0), 3)
 
-        length_index = hypot(x2 - x1, y2 - y1)
-        length_middle = hypot(x3 - x2, y3 - y2)
+        length_volUP = hypot(x2 - x1, y2 - y1)
+        length_volDO = hypot(x5 - x1, y5 - y1)
+        length_pause = hypot(x3 - x2, y3 - y2)
+        length_next = hypot(x3 - x1, y3 - y1)
+        length_previous = hypot(x4 - x1, y4 - y1)
+        length_mute = hypot(x4 - x3, y4 - y3)
 
-        if length_index < 30:
-            if not clicking:
-                click_start_time = time.time()
-                clicking = True
+        # Increase volume
+        if length_volUP < 30:
+            if not v_volUP:
+                volUP_start_time = time.time()
+                v_volUP = True
             else:
-                elapsed_time = time.time() - click_start_time
-                if elapsed_time >= 3:
-                    volume.SetMasterVolumeLevel(vol, None)
-                    clicking = False
-                else:
-                    vol = np.interp(elapsed_time, [0, 3], [volMin, volMax])
-                    volume.SetMasterVolumeLevel(vol, None)
-                    volbar = np.interp(elapsed_time, [0, 3], [400, 150])
-                    volper = np.interp(elapsed_time, [0, 3], [0, 100])
+                elapsed_time = time.time() - volUP_start_time
+                if elapsed_time >= 0.1:
+                    keyboard.press(Key.media_volume_up)
+                    keyboard.release(Key.media_volume_up)
+                    v_volUP = False
         else:
-            clicking = False
+            v_volUP = False
 
-        # Control de pausa
-        if length_middle < 25:
+        # Decrease volume
+        if length_volDO < 30:
+            if not v_VolDO:
+                volDO_start_time = time.time()
+                v_VolDO = True
+            else:
+                elapsed_time = time.time() - volDO_start_time
+                if elapsed_time >= 0.1:
+                    keyboard.press(Key.media_volume_down)
+                    keyboard.release(Key.media_volume_down)
+                    v_VolDO = False
+        else:
+            v_VolDO = False
+
+        # Pause control
+        if length_pause < 25:
             if not pausing:
                 pause_start_time = time.time()
                 pausing = True
@@ -86,13 +110,53 @@ while True:
         else:
             pausing = False
 
-        cv2.rectangle(img, (50, 150), (85, 400), (0, 0, 255), 4)
-        cv2.rectangle(img, (50, int(volbar)), (85, 400), (0, 0, 255), cv2.FILLED)
-        cv2.putText(img, f"{int(volper)}%", (10, 40), cv2.FONT_ITALIC, 1, (0, 255, 98), 3)
+        # Next song
+        if length_next < 30:
+            if not v_next:
+                next_start_time = time.time()
+                v_next = True
+            else:
+                elapsed_time = time.time() - next_start_time
+                if elapsed_time >= 1:
+                    keyboard.press(Key.media_next)
+                    keyboard.release(Key.media_next)
+                    v_next = False
+        else:
+            v_next = False
 
+        # Previous song
+        if length_previous < 30:
+            if not v_previous:
+                previous_start_time = time.time()
+                v_previous = True
+            else:
+                elapsed_time = time.time() - previous_start_time
+                if elapsed_time >= 1:
+                    keyboard.press(Key.media_previous)
+                    keyboard.release(Key.media_previous)
+                    v_previous = False
+        else:
+            v_previous = False
+
+        # Mute
+        if length_mute < 32:
+            if not v_mute:
+                mute_star_time = time.time()
+                v_mute = True
+            else:
+                elapsed_time = time.time() - mute_star_time
+                if elapsed_time >= 1:
+                    keyboard.press(Key.media_volume_mute)
+                    keyboard.release(Key.media_volume_mute)
+                    v_mute = False
+        else:
+            v_mute = False
+
+    # Resize the image and display it in a window
     img = cv2.resize(img, dsize=(640, 480))
     cv2.imshow('Image Camera', img)
 
+    # Capture keyboard events
     key = cv2.waitKey(1) & 0xff
 
     if key == ord('d'):
@@ -101,7 +165,9 @@ while True:
     if key == ord(' '):
         break
 
+# Release resources
 cap.release()
 cv2.destroyAllWindows()
+
 
 
