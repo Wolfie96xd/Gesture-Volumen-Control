@@ -5,7 +5,7 @@ This is my first publication of a software made by me. It is mainly a way to con
 Firstly, based on the first hand that is detected, the structure or "**virtual skeleton**" of the hand can be visualized and its connection nodes, which total 21 per hand, can be identified.
 
 We will focus on the tips of your fingers following the next instructions: 
-- **Stop/Play**: INDEX + MIDDLE ![text](https://placehold.it/150/ffffff/ff0000?text=hello)
+- **Stop/Play**: INDEX + MIDDLE 
 - **Volume UP**: INDEX + THUMB
 - **Volume Down**: PINKY + THUMB
 - **Next**: MIDDLE + THUMB
