@@ -20,3 +20,6 @@ We will focus on the tips of your fingers following the next instructions:
 - Math
 - Time
 - Pynput
+
+## Tested on
+- Windows 11 (python 3.11.2)
